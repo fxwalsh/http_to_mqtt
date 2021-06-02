@@ -1,4 +1,6 @@
-var settings = {
+require('dotenv').config();
+
+const settings = {
     mqtt: {
         host: process.env.MQTT_HOST || '',
         user: process.env.MQTT_USER || '',
@@ -14,16 +16,16 @@ var settings = {
     http_port: process.env.PORT || 5000
 }
 
-var mqtt = require('mqtt');
-var express = require('express');
-var bodyParser = require('body-parser');
-var multer = require('multer');
+const mqtt = require('mqtt');
+const express = require('express');
+const multer = require('multer');
 
-var app = express();
+
+const app = express();
 
 function getMqttClient() {
 
-    var options = {
+    const options = {
         username: settings.mqtt.user,
         password: settings.mqtt.password
     };
@@ -35,15 +37,15 @@ function getMqttClient() {
     return mqtt.connect(settings.mqtt.host, options);
 }
 
-var mqttClient = getMqttClient();
+const mqttClient = getMqttClient();
 
 app.set('port', settings.http_port);
-app.use(bodyParser.json());
+app.use(express.urlencoded());
 
 function logRequest(req, res, next) {
-    var ip = req.headers['x-forwarded-for'] ||
+    const ip = req.headers['x-forwarded-for'] ||
         req.connection.remoteAddress;
-    var message = 'Received request [' + req.originalUrl +
+    let message = 'Received request [' + req.originalUrl +
         '] from [' + ip + ']';
 
     if (settings.debug) {
@@ -68,7 +70,7 @@ function authorizeUser(req, res, next) {
 
 function checkSingleFileUpload(req, res, next) {
     if (req.query.single) {
-        var upload = multer().single(req.query.single);
+        const upload = multer().single(req.query.single);
 
         upload(req, res, next);
     }
@@ -114,7 +116,7 @@ app.post('/post/', logRequest, authorizeUser, checkSingleFileUpload, checkMessag
 
 app.get('/subscribe/', logRequest, authorizeUser, function (req, res) {
 
-    var topic = req.query.topic;
+    const topic = req.query.topic;
 
     if (!topic) {
         res.status(500).send('topic not specified');
@@ -122,7 +124,7 @@ app.get('/subscribe/', logRequest, authorizeUser, function (req, res) {
     else {
         // get a new mqttClient
         // so we dont constantly add listeners on the 'global' mqttClient
-        var mqttClient = getMqttClient();
+        const mqttClient = getMqttClient();
 
         mqttClient.on('connect', function () {
             mqttClient.subscribe(topic);
